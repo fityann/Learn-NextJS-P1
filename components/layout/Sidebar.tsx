@@ -121,7 +121,7 @@ const Sidebar = () => {
       {/* Logout */}
       <div className="mt-auto pt-6 border-t border-white/5">
         <NavItem
-          href="/logout"
+          href="/sign-in"
           label="Logout"
           iconPath="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
         />
