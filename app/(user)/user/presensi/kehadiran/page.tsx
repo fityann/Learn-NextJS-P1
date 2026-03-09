@@ -1,8 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 
 const PresensiPage = () => {
+  // State untuk menyimpan status yang dipilih (default: Hadir)
+  const [selectedStatus, setSelectedStatus] = useState("Hadir");
+
+  const statuses = ["Hadir", "Izin", "Sakit"];
+
   return (
     <main className="p-10 bg-[#f8fafc] dark:bg-[#050505] min-h-screen text-slate-900 dark:text-white font-sans transition-colors duration-300">
       {/* Header Section */}
@@ -30,24 +35,36 @@ const PresensiPage = () => {
             </div>
 
             <p className="text-[10px] uppercase text-slate-500 font-bold mb-3 tracking-widest">Status Kehadiran</p>
+            
+            {/* Tombol Status dengan Logika Klik */}
             <div className="grid grid-cols-3 gap-2 mb-6">
-              <button className="py-3 rounded-xl bg-[#00bcd4] text-white font-bold text-sm hover:opacity-90">Hadir</button>
-              <button className="py-3 rounded-xl bg-slate-100 dark:bg-[#1a1a1a] text-slate-600 dark:text-slate-400 font-bold text-sm border border-slate-200 dark:border-white/5">Izin</button>
-              <button className="py-3 rounded-xl bg-slate-100 dark:bg-[#1a1a1a] text-slate-600 dark:text-slate-400 font-bold text-sm border border-slate-200 dark:border-white/5">Sakit</button>
+              {statuses.map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setSelectedStatus(status)}
+                  className={`py-3 rounded-xl font-bold text-sm transition-all border ${
+                    selectedStatus === status
+                      ? "bg-[#00bcd4] text-white border-[#00bcd4] shadow-lg shadow-cyan-500/20"
+                      : "bg-slate-100 dark:bg-[#1a1a1a] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/5 hover:bg-slate-200 dark:hover:bg-[#252525]"
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
             </div>
 
             <p className="text-[10px] uppercase text-slate-500 font-bold mb-3 tracking-widest">Keterangan (Opsional)</p>
             <textarea 
-              className="w-full bg-slate-50 dark:bg-[#050505] border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-sm h-32 mb-6 focus:outline-none focus:border-[#00bcd4]" 
-              placeholder="Contoh: Sakit flu, Izin urusan keluarga..."
+              className="w-full bg-slate-50 dark:bg-[#050505] border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-sm h-32 mb-6 focus:outline-none focus:border-[#00bcd4] transition-colors" 
+              placeholder={`Berikan alasan jika Anda ${selectedStatus}...`}
             />
             
-            <button className="w-full py-4 bg-[#005a66] text-[#00bcd4] rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#004a54]">
-              <span>✓</span> Submit Kehadiran
+            <button className="w-full py-4 bg-[#005a66] text-[#00bcd4] rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#004a54] transition-all active:scale-[0.98]">
+              <span>✓</span> Submit Kehadiran ({selectedStatus})
             </button>
           </div>
 
-          {/* Gradient Info Box */}
+          {/* Info Box */}
           <div className="bg-gradient-to-br from-blue-700 to-blue-500 p-6 rounded-3xl">
             <div className="flex items-center gap-2 mb-2 text-white">
               <span className="text-xl">ⓘ</span>
@@ -67,6 +84,7 @@ const PresensiPage = () => {
               <button className="text-xs text-cyan-600 dark:text-cyan-400 font-bold">Lihat Semua</button>
             </div>
 
+            {/* Table Header */}
             <div className="grid grid-cols-5 text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-4 px-4">
               <div>Tanggal</div>
               <div>Masuk</div>
@@ -75,6 +93,7 @@ const PresensiPage = () => {
               <div>Ket</div>
             </div>
 
+            {/* Table Rows */}
             <div className="space-y-1">
               {[
                 { tgl: "1 Mar 2024", msk: "08:00", plg: "17:00", stt: "HADIR", sttColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400", ket: "-" },

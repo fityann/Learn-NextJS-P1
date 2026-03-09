@@ -1,8 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 
 const CutiPage = () => {
+  // State untuk melacak jenis cuti yang dipilih
+  const [selectedType, setSelectedType] = useState("Cuti Tahunan");
+
+  const cutiTypes = [
+    { name: 'Cuti Tahunan', icon: '📅' },
+    { name: 'Cuti Sakit', icon: '🤒' },
+    { name: 'Alasan Penting', icon: '🏠' },
+    { name: 'Cuti Bersama', icon: '🤝' }
+  ];
+
   return (
     <main className="p-10 bg-[#f8fafc] dark:bg-[#050505] min-h-screen text-slate-900 dark:text-white font-sans transition-colors duration-300">
       {/* Header */}
@@ -15,37 +25,56 @@ const CutiPage = () => {
         {/* Left Column: Form */}
         <div className="lg:col-span-8 bg-white dark:bg-[#111] p-8 rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
           <p className="text-[10px] uppercase text-slate-500 font-bold mb-4 tracking-widest">Pilih Jenis Cuti</p>
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            {['Cuti Tahunan', 'Cuti Sakit', 'Alasan Penting', 'Cuti Bersama'].map((item, i) => (
-              <div key={i} className="flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-[#1a1a1a] rounded-2xl border border-slate-200 dark:border-white/10 hover:border-[#00bcd4] cursor-pointer transition-all text-center">
-                <div className="text-2xl mb-3">📅</div>
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{item}</span>
+          
+          {/* Grid Jenis Cuti dengan Logika Klik */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {cutiTypes.map((item) => (
+              <div 
+                key={item.name} 
+                onClick={() => setSelectedType(item.name)}
+                className={`flex flex-col items-center justify-center p-6 rounded-2xl border transition-all cursor-pointer group active:scale-95 ${
+                  selectedType === item.name 
+                    ? "bg-cyan-50 dark:bg-cyan-950/30 border-[#00bcd4] ring-1 ring-[#00bcd4]" 
+                    : "bg-slate-50 dark:bg-[#1a1a1a] border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
+                }`}
+              >
+                <div className={`text-2xl mb-3 transition-transform group-hover:scale-110 ${selectedType === item.name ? "grayscale-0" : "grayscale"}`}>
+                  {item.icon}
+                </div>
+                <span className={`text-xs font-bold transition-colors ${
+                  selectedType === item.name ? "text-[#00bcd4]" : "text-slate-500 dark:text-slate-400"
+                }`}>
+                  {item.name}
+                </span>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="text-xs font-bold text-slate-400 mb-2 block uppercase">Tanggal Mulai</label>
+              <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-tighter">Tanggal Mulai</label>
               <input type="date" className="w-full bg-slate-50 dark:bg-[#050505] border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-sm focus:outline-none focus:border-[#00bcd4] text-slate-900 dark:text-white" />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-400 mb-2 block uppercase">Tanggal Berakhir</label>
+              <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-tighter">Tanggal Berakhir</label>
               <input type="date" className="w-full bg-slate-50 dark:bg-[#050505] border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-sm focus:outline-none focus:border-[#00bcd4] text-slate-900 dark:text-white" />
             </div>
           </div>
 
-          <label className="text-xs font-bold text-slate-400 mb-2 block uppercase">Alasan Cuti</label>
-          <textarea className="w-full bg-slate-50 dark:bg-[#050505] border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-sm h-32 mb-8 focus:outline-none focus:border-[#00bcd4] text-slate-900 dark:text-white" placeholder="Berikan alasan yang jelas untuk pengajuan cuti Anda..."></textarea>
+          <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-tighter">Alasan Cuti</label>
+          <textarea 
+            className="w-full bg-slate-50 dark:bg-[#050505] border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-sm h-32 mb-8 focus:outline-none focus:border-[#00bcd4] text-slate-900 dark:text-white transition-all" 
+            placeholder={`Jelaskan alasan detail pengajuan ${selectedType} Anda...`}
+          ></textarea>
 
-          <div className="border-2 border-dashed border-slate-300 dark:border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center text-center mb-8 bg-slate-50 dark:bg-[#050505]">
+          <div className="border-2 border-dashed border-slate-300 dark:border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center text-center mb-8 bg-slate-50 dark:bg-[#050505] hover:bg-slate-100 dark:hover:bg-[#0a0a0a] transition-colors cursor-pointer">
             <div className="text-3xl mb-2">☁️</div>
             <p className="text-sm font-bold">Upload Dokumen Pendukung (Opsional)</p>
             <p className="text-[10px] text-slate-500">PDF, JPG, atau PNG (Maks 2MB)</p>
           </div>
 
-          <button className="w-full py-4 bg-[#005a66] text-[#00bcd4] rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#004a54] transition-colors">
-            <span>✈️</span> Kirim Pengajuan
+          <button className="w-full py-4 bg-[#005a66] text-[#00bcd4] rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#004a54] transition-all active:scale-[0.99] shadow-lg shadow-cyan-900/10">
+            <span>✈️</span> Kirim Pengajuan {selectedType}
           </button>
         </div>
 
