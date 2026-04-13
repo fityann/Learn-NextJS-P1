@@ -8,6 +8,7 @@ export default function JabatanPage() {
     { id: 1, jabatan: "STAFF", divisi: "INFORMATION TECHNOLOGY", gaji: "Rp 3.000.000" },
     { id: 2, jabatan: "HEAD OF", divisi: "HRD", gaji: "Rp 5.000.000" },
   ];
+  
 
   return (
     <div className="w-full h-screen flex bg-slate-50 dark:bg-black text-slate-900 dark:text-white transition-colors duration-500 overflow-hidden font-sans">
