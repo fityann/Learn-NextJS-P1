@@ -1,19 +1,106 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 
+interface Konfigurasi {
+  id: number;
+  tahun: string;
+  jatah_cuti_tahunan: number;
+  nilai_uang_per_cuti: number;
+  aktif: boolean;
+}
+
 export default function KonfigurasiPage() {
-  // Data dummy sesuai gambar referensi (hanya 1 data biasanya untuk config tahunan)
-  const [dataConfig] = useState([
-    { id: 1, tahun: "2024", jatahCuti: "12 Hari", nilaiUang: "Rp 150.000", status: "AKTIF" },
-  ]);
+  // State untuk data dari API
+  const [dataConfig, setDataConfig] = useState<Konfigurasi[]>([]);
+  
+  // State untuk Form
+  const [formData, setFormData] = useState({
+    tahun: "",
+    jatah_cuti_tahunan: "",
+    nilai_uang_per_cuti: "",
+    aktif: true
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  // ===============================
+  // 1. Fetch Data (GET)
+  // ===============================
+  const fetchKonfigurasi = async () => {
+    try {
+      const response = await fetch("https://payroll.politekniklp3i-tasikmalaya.ac.id/api/konfigurasi", {
+        headers: {
+          "Accept": "application/json",
+          // "Authorization": `Bearer ${token}` // Tambahkan jika butuh auth
+        }
+      });
+      const result = await response.json();
+      // Menyesuaikan jika response dibungkus properti .data
+      setDataConfig(Array.isArray(result) ? result : (result.data || []));
+    } catch (error) {
+      console.error("Gagal mengambil data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchKonfigurasi();
+  }, []);
+
+  // ===============================
+  // 2. Simpan Data (POST)
+  // ===============================
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (dataConfig.length >= 1) {
+      alert("Sesuai aturan: Jika sudah terdapat satu data maka tidak dapat menambah lagi.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("https://payroll.politekniklp3i-tasikmalaya.ac.id/api/konfigurasi", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          tahun: formData.tahun,
+          jatah_cuti_tahunan: Number(formData.jatah_cuti_tahunan),
+          nilai_uang_per_cuti: Number(formData.nilai_uang_per_cuti),
+          aktif: formData.aktif
+        }),
+      });
+
+      if (response.ok) {
+        alert("Konfigurasi berhasil disimpan!");
+        setFormData({ tahun: "", jatah_cuti_tahunan: "", nilai_uang_per_cuti: "", aktif: true });
+        fetchKonfigurasi();
+      } else {
+        const err = await response.json();
+        alert("Gagal: " + (err.message || "Terjadi kesalahan server"));
+      }
+    } catch (error) {
+      alert("Kesalahan koneksi ke server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper formatting rupiah
+  const formatIDR = (amount: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   return (
     <div className="w-full h-screen flex bg-slate-50 dark:bg-black text-slate-900 dark:text-white transition-colors duration-500 overflow-hidden font-sans">
-
       <div className="flex flex-1 flex-col overflow-y-auto">
-
         <main className="p-8">
           <div className="mb-10 text-left">
             <h2 className="text-4xl font-extrabold tracking-tight">Konfigurasi Tahun</h2>
@@ -31,7 +118,6 @@ export default function KonfigurasiPage() {
                   <h3 className="text-xl font-bold">Tambah Konfigurasi</h3>
                 </div>
 
-                {/* Info Alert Box (Sesuai Gambar) */}
                 <div className="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start">
                   <div className="h-5 w-5 rounded bg-amber-500 flex items-center justify-center text-[10px] text-black font-bold shrink-0 mt-0.5">i</div>
                   <p className="text-xs text-amber-600 dark:text-amber-500 font-medium leading-relaxed">
@@ -39,16 +125,30 @@ export default function KonfigurasiPage() {
                   </p>
                 </div>
 
-                <div className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Tahun</label>
-                    <input type="text" placeholder="2024" className="input-style" />
+                    <input 
+                      type="text" 
+                      placeholder="2024" 
+                      className="input-style"
+                      value={formData.tahun}
+                      onChange={(e) => setFormData({...formData, tahun: e.target.value})}
+                      required
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Jatah Cuti Tahunan</label>
                     <div className="relative">
-                      <input type="number" placeholder="12" className="input-style pr-16" />
+                      <input 
+                        type="number" 
+                        placeholder="12" 
+                        className="input-style pr-16"
+                        value={formData.jatah_cuti_tahunan}
+                        onChange={(e) => setFormData({...formData, jatah_cuti_tahunan: e.target.value})}
+                        required
+                      />
                       <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hari</span>
                     </div>
                   </div>
@@ -57,22 +157,36 @@ export default function KonfigurasiPage() {
                     <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Nilai Uang Per Cuti</label>
                     <div className="relative">
                       <span className="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
-                      <input type="number" className="input-style pl-12" />
+                      <input 
+                        type="number" 
+                        className="input-style pl-12"
+                        value={formData.nilai_uang_per_cuti}
+                        onChange={(e) => setFormData({...formData, nilai_uang_per_cuti: e.target.value})}
+                        required
+                      />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Status</label>
-                    <select className="input-style appearance-none cursor-pointer">
-                      <option value="Aktif">Aktif</option>
-                      <option value="Non-Aktif">Non-Aktif</option>
+                    <select 
+                      className="input-style appearance-none cursor-pointer"
+                      value={formData.aktif ? "true" : "false"}
+                      onChange={(e) => setFormData({...formData, aktif: e.target.value === "true"})}
+                    >
+                      <option value="true">Aktif</option>
+                      <option value="false">Non-Aktif</option>
                     </select>
                   </div>
                   
-                  <button className="w-full bg-[#005a8d] hover:bg-[#0077b6] text-white font-bold py-4 rounded-2xl shadow-lg transition-all mt-4 active:scale-95">
-                    Simpan
+                  <button 
+                    type="submit"
+                    disabled={loading || dataConfig.length >= 1}
+                    className="w-full bg-[#005a8d] hover:bg-[#0077b6] disabled:bg-slate-300 dark:disabled:bg-white/10 text-white font-bold py-4 rounded-2xl shadow-lg transition-all mt-4 active:scale-95"
+                  >
+                    {loading ? "Memproses..." : "Simpan Konfigurasi"}
                   </button>
-                </div>
+                </form>
               </div>
             </div>
 
@@ -103,13 +217,13 @@ export default function KonfigurasiPage() {
                         <tr key={item.id} className="group hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-all duration-300 font-sans">
                           <td className="px-6 py-6 font-bold text-slate-400 dark:text-slate-50">{index + 1}</td>
                           <td className="px-6 py-6 font-black text-slate-700 dark:text-slate-100 text-lg tracking-tight">{item.tahun}</td>
-                          <td className="px-6 py-6 font-medium text-slate-600 dark:text-slate-300">{item.jatahCuti}</td>
+                          <td className="px-6 py-6 font-medium text-slate-600 dark:text-slate-300">{item.jatah_cuti_tahunan} Hari</td>
                           <td className="px-6 py-6 font-black text-emerald-500 dark:text-emerald-400 tracking-wide">
-                            {item.nilaiUang}
+                            {formatIDR(item.nilai_uang_per_cuti)}
                           </td>
                           <td className="px-6 py-6 text-center">
-                            <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/20">
-                              {item.status}
+                            <span className={`${item.aktif ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border-rose-500/20'} text-[10px] font-black px-3 py-1 rounded-full border uppercase`}>
+                              {item.aktif ? 'AKTIF' : 'NON-AKTIF'}
                             </span>
                           </td>
                           <td className="px-6 py-6 pr-8">
@@ -124,6 +238,11 @@ export default function KonfigurasiPage() {
                           </td>
                         </tr>
                       ))}
+                      {dataConfig.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-10 text-center text-slate-400">Belum ada data konfigurasi.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

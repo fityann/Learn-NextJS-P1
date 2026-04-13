@@ -1,30 +1,99 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export default function UserPage() {
-  // Data dummy sesuai referensi gambar Management User
-  const [dataUser] = useState([
-    { id: 1, nama: "Admin HRD", email: "hrd@mail.com", role: "ADMIN" },
-    { id: 2, nama: "John Doe", email: "john@mail.com", role: "USER" },
-    { id: 3, nama: "Jane Smith", email: "jane@mail.com", role: "USER" },
-  ]);
+  // State untuk Data dari API
+  const [dataUser, setDataUser] = useState<User[]>([]);
+  
+  // State untuk Form Input
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "USER", // Default role
+  });
 
-  // State untuk Modal Detail
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  // State UI
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const openDetail = (user: any) => {
+  // Ambil token dari storage (Sesuaikan dengan sistem login Anda)
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
+  // ===============================
+  // 1. Fetch Data User (GET)
+  // ===============================
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch("https://payroll.politekniklp3i-tasikmalaya.ac.id/api/master-user", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Accept": "application/json",
+        },
+      });
+      const result = await response.json();
+      // Sesuaikan jika response API dibungkus properti .data
+      setDataUser(result.data || result);
+    } catch (error) {
+      console.error("Gagal mengambil data user:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (token) fetchUsers();
+  }, [token]);
+
+  // ===============================
+  // 2. Simpan Data User (POST)
+  // ===============================
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await fetch("https://payroll.politekniklp3i-tasikmalaya.ac.id/api/master-user", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        alert("User berhasil ditambahkan!");
+        setFormData({ name: "", email: "", password: "", role: "USER" });
+        fetchUsers(); // Refresh tabel
+      } else {
+        const errorData = await response.json();
+        alert("Gagal: " + (errorData.message || "Terjadi kesalahan"));
+      }
+    } catch (error) {
+      alert("Terjadi kesalahan koneksi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openDetail = (user: User) => {
     setSelectedUser(user);
     setIsModalOpen(true);
   };
 
   return (
     <div className="w-full h-screen flex bg-slate-50 dark:bg-black text-slate-900 dark:text-white transition-colors duration-500 overflow-hidden font-sans">
-
       <div className="flex flex-1 flex-col overflow-y-auto relative">
-
         <main className="p-8">
           <div className="mb-10 text-left">
             <h2 className="text-4xl font-extrabold tracking-tight">Management User</h2>
@@ -42,35 +111,63 @@ export default function UserPage() {
                   <h3 className="text-xl font-bold">Tambah User</h3>
                 </div>
 
-                <div className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Nama</label>
-                    <input type="text" placeholder="Nama Lengkap" className="input-style" />
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="Nama Lengkap" 
+                      className="input-style" 
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Email</label>
-                    <input type="email" placeholder="email@example.com" className="input-style" />
+                    <input 
+                      type="email" 
+                      required
+                      placeholder="email@example.com" 
+                      className="input-style" 
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Password</label>
-                    <input type="password" placeholder="••••••••" className="input-style" />
+                    <input 
+                      type="password" 
+                      required
+                      placeholder="••••••••" 
+                      className="input-style" 
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Role</label>
-                    <select className="input-style appearance-none cursor-pointer">
-                      <option>User / Karyawan</option>
-                      <option>Admin HRD</option>
-                      <option>Manager</option>
+                    <select 
+                      className="input-style appearance-none cursor-pointer"
+                      value={formData.role}
+                      onChange={(e) => setFormData({...formData, role: e.target.value})}
+                    >
+                      <option value="USER">User / Karyawan</option>
+                      <option value="ADMIN">Admin HRD</option>
+                      <option value="MANAGER">Manager</option>
                     </select>
                   </div>
                   
-                  <button className="w-full bg-[#005a8d] hover:bg-[#0077b6] text-white font-bold py-4 rounded-2xl shadow-lg transition-all mt-4 active:scale-95">
-                    Simpan
+                  <button 
+                    disabled={loading}
+                    className="w-full bg-[#005a8d] hover:bg-[#0077b6] text-white font-bold py-4 rounded-2xl shadow-lg transition-all mt-4 active:scale-95 disabled:opacity-50"
+                  >
+                    {loading ? "Menyimpan..." : "Simpan"}
                   </button>
-                </div>
+                </form>
               </div>
             </div>
 
@@ -99,7 +196,7 @@ export default function UserPage() {
                       {dataUser.map((item, index) => (
                         <tr key={item.id} className="group hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-all duration-300">
                           <td className="px-6 py-6 font-bold text-slate-400 dark:text-slate-50">{index + 1}</td>
-                          <td className="px-6 py-6 font-bold text-slate-700 dark:text-slate-100">{item.nama}</td>
+                          <td className="px-6 py-6 font-bold text-slate-700 dark:text-slate-100">{item.name}</td>
                           <td className="px-6 py-6 text-sm text-slate-500 dark:text-slate-400">{item.email}</td>
                           <td className="px-6 py-6 text-center">
                             <span className={`text-[10px] font-black px-3 py-1 rounded-full border uppercase ${
@@ -133,14 +230,14 @@ export default function UserPage() {
           </div>
         </main>
 
-        {/* Modal Detail User (Adaptive Theme) */}
+        {/* Modal Detail User */}
         {isModalOpen && selectedUser && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm transition-all" onClick={() => setIsModalOpen(false)}></div>
             <div className="relative w-full max-w-[440px] bg-white dark:bg-[#0f0f0f] rounded-[32px] shadow-2xl overflow-hidden border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in duration-300">
               <div className="bg-gradient-to-r from-[#003d5e] to-[#005a8d] p-8 relative">
                 <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 h-8 w-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all">✕</button>
-                <h3 className="text-2xl font-bold text-white">{selectedUser.nama}</h3>
+                <h3 className="text-2xl font-bold text-white">{selectedUser.name}</h3>
                 <p className="text-white/70 font-medium tracking-wide">System Access Profile</p>
               </div>
               <div className="p-8 space-y-8">
