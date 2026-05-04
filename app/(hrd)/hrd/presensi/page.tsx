@@ -1,119 +1,316 @@
 "use client";
 
-import React from "react";
-import Sidebar from "@/components/layout/Sidebar";
+import { useState, useEffect } from "react";
 
-const attendanceData = [
-  { id: 1, name: "Ahmad Fauzi", nik: "EMP001", division: "IT", time: "08:00", status: "HADIR", initial: "A" },
-  { id: 2, name: "Siti Aminah", nik: "EMP002", division: "HR", time: "08:15", status: "HADIR", initial: "S" },
-  { id: 3, name: "Budi Santoso", nik: "EMP003", division: "Finance", time: "-", status: "IZIN", initial: "B" },
-  { id: 4, name: "Rina Wijaya", nik: "EMP004", division: "Marketing", time: "-", status: "SAKIT", initial: "R" },
-];
+interface Presensi {
+  id_karyawan: string | number;
+  tanggal: string;
+  status: string;
+  keterangan: string;
+  jam_masuk: string | null;
+  jam_keluar: string | null;
+}
 
-const ReportPresensiPage = () => {
+interface Karyawan {
+  id: number;
+  nik: string;
+  nama: string;
+}
+
+export default function ReportPresensiPage() {
+  const [reportData, setReportData] = useState<Presensi[]>([]);
+  const [listKaryawan, setListKaryawan] = useState<Karyawan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      };
+
+      try {
+        const [resPresensi, resKaryawan] = await Promise.all([
+          fetch(
+            "https://payroll.politekniklp3i-tasikmalaya.ac.id/api/presensi",
+            { headers },
+          ),
+          fetch(
+            "https://payroll.politekniklp3i-tasikmalaya.ac.id/api/karyawan",
+            { headers },
+          ),
+        ]);
+
+        const jsonPresensi = await resPresensi.json();
+        const jsonKaryawan = await resKaryawan.json();
+
+        setReportData(jsonPresensi.data || jsonPresensi || []);
+        setListKaryawan(jsonKaryawan.data || jsonKaryawan || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (token) fetchData();
+  }, [token]);
+
+  const getNamaKaryawan = (idOrNik: string | number) => {
+    const found = listKaryawan.find(
+      (k) => k.id === Number(idOrNik) || k.nik === String(idOrNik),
+    );
+    return found ? found.nama : "Tidak Diketahui";
+  };
+
+  const filteredData = reportData.filter((item) => {
+    const nama = getNamaKaryawan(item.id_karyawan).toLowerCase();
+    const search = searchTerm.toLowerCase();
+    return (
+      nama.includes(search) ||
+      item.id_karyawan?.toString().includes(search) ||
+      item.status?.toLowerCase().includes(search)
+    );
+  });
+
+  const stats = {
+    hadir: filteredData.filter((d) => d.status.toLowerCase() === "hadir")
+      .length,
+    izin: filteredData.filter((d) => d.status.toLowerCase() === "izin").length,
+    sakit: filteredData.filter((d) => d.status.toLowerCase() === "sakit")
+      .length,
+  };
+
   return (
-    // Memastikan kontainer utama mendukung dark mode secara eksplisit
-    <div className="w-full h-screen flex bg-white dark:bg-[#0a0a0a] text-slate-900 dark:text-white transition-colors duration-300 overflow-hidden">
+    <div className="min-h-screen space-y-8 px-8 md:px-10 pt-10 pb-20 bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 transition-colors duration-300">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-extrabold tracking-tight">
+            Report Presensi
+          </h2>
+          <p className="text-slate-500 dark:text-zinc-400 mt-1">
+            Monitoring kehadiran seluruh karyawan secara real-time.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 font-bold text-sm shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            Export PDF
+          </button>
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#003d5e] text-white font-bold text-sm shadow-lg shadow-blue-900/20 hover:bg-[#002d45] transition-all">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              />
+            </svg>
+            Cetak Laporan
+          </button>
+        </div>
+      </div>
 
-      <div className="flex-1 flex flex-col overflow-y-auto bg-slate-50 dark:bg-[#0a0a0a]">
+      {/* Filter Card */}
+      <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-sm border border-slate-100 dark:border-zinc-800">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2 relative group">
+            <svg
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Cari nama karyawan atau NIK..."
+              className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <input
+            type="date"
+            className="px-4 py-3 rounded-2xl border border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800 outline-none focus:border-blue-500 transition-all text-sm"
+          />
+          <select className="px-4 py-3 rounded-2xl border border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800 outline-none focus:border-blue-500 transition-all text-sm cursor-pointer">
+            <option>Semua Divisi</option>
+          </select>
+        </div>
+      </div>
 
-        <main className="p-8">
-          {/* Action Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-            <div>
-              <h2 className="text-2xl font-bold">Monitoring Kehadiran</h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">Lihat data kehadiran karyawan secara real-time.</p>
+      {/* Table Card */}
+      <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800 overflow-hidden">
+        <div className="px-8 py-6 border-b border-slate-50 dark:border-zinc-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h3 className="text-lg font-bold">Data Kehadiran Hari Ini</h3>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
+                Hadir: {stats.hadir}
+              </span>
             </div>
-            <div className="flex gap-3">
-              <button className="bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                Export PDF
-              </button>
-              <button className="bg-[#00bcd4] hover:bg-[#00acc1] px-4 py-2 rounded-lg text-white dark:text-black font-bold text-sm transition-colors">
-                Cetak Laporan
-              </button>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-amber-500"></span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
+                Izin: {stats.izin}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-rose-500"></span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
+                Sakit: {stats.sakit}
+              </span>
             </div>
           </div>
+        </div>
 
-          {/* Filter Section */}
-          <div className="bg-white dark:bg-[#161616] p-4 rounded-2xl border border-slate-200 dark:border-white/5 mb-8 flex flex-wrap gap-4 items-center shadow-sm">
-            <input 
-              type="text" 
-              placeholder="Cari nama karyawan atau NIK..." 
-              className="flex-1 min-w-[200px] bg-slate-50 dark:bg-[#1e1e1e] border border-slate-200 dark:border-white/10 rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#00bcd4] outline-none" 
-            />
-            <input 
-              type="date" 
-              className="w-full md:w-48 bg-slate-50 dark:bg-[#1e1e1e] border border-slate-200 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none" 
-            />
-            <select className="w-full md:w-48 bg-slate-50 dark:bg-[#1e1e1e] border border-slate-200 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none">
-              <option>Semua Divisi</option>
-              <option>IT</option>
-              <option>HR</option>
-            </select>
-          </div>
-
-          {/* Table Section */}
-          <div className="bg-white dark:bg-[#161616] rounded-2xl border border-slate-200 dark:border-white/5 overflow-hidden shadow-sm">
-            <div className="p-6 flex justify-between items-center border-b border-slate-200 dark:border-white/5">
-              <h2 className="text-lg font-bold">Data Kehadiran Hari Ini</h2>
-              <div className="flex gap-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
-                <span className="flex items-center gap-1"><span className="text-emerald-500">●</span> Hadir: 120</span>
-                <span className="flex items-center gap-1"><span className="text-amber-500">●</span> Izin: 5</span>
-              </div>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50/50 dark:bg-transparent text-slate-500 uppercase text-[10px] tracking-wider">
-                  <tr>
-                    <th className="px-6 py-4">No</th>
-                    <th className="px-6 py-4">Karyawan</th>
-                    <th className="px-6 py-4">Divisi</th>
-                    <th className="px-6 py-4">Jam Masuk</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                  {attendanceData.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 font-bold text-slate-400">{item.id}</td>
-                      <td className="px-6 py-4 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-[#2a2a2a] flex items-center justify-center text-sm font-bold">
-                          {item.initial}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50/50 dark:bg-zinc-800/30 text-slate-400 dark:text-zinc-500">
+              <tr>
+                <th className="px-8 py-5 font-bold uppercase tracking-widest text-[10px]">
+                  No
+                </th>
+                <th className="px-8 py-5 font-bold uppercase tracking-widest text-[10px]">
+                  Karyawan
+                </th>
+                <th className="px-8 py-5 font-bold uppercase tracking-widest text-[10px]">
+                  Divisi
+                </th>
+                <th className="px-8 py-5 font-bold uppercase tracking-widest text-[10px]">
+                  Jam Masuk
+                </th>
+                <th className="px-8 py-5 font-bold uppercase tracking-widest text-[10px]">
+                  Status
+                </th>
+                <th className="px-8 py-5 font-bold uppercase tracking-widest text-[10px] text-right">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 dark:divide-zinc-800">
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-8 py-12 text-center text-slate-400 italic"
+                  >
+                    Mengambil data...
+                  </td>
+                </tr>
+              ) : filteredData.length > 0 ? (
+                filteredData.map((row, i) => (
+                  <tr
+                    key={i}
+                    className="group hover:bg-slate-50/50 dark:hover:bg-zinc-800/20 transition-colors"
+                  >
+                    <td className="px-8 py-5 font-bold text-slate-300 dark:text-zinc-700">
+                      {i + 1}
+                    </td>
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center font-bold text-slate-500 dark:text-zinc-400 text-xs shadow-inner">
+                          {getNamaKaryawan(row.id_karyawan).charAt(0)}
                         </div>
                         <div>
-                          <p className="font-bold">{item.name}</p>
-                          <p className="text-[11px] text-slate-500">{item.nik}</p>
+                          <div className="font-bold text-slate-700 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {getNamaKaryawan(row.id_karyawan)}
+                          </div>
+                          <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">
+                            {row.id_karyawan}
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="bg-slate-100 dark:bg-[#2a2a2a] px-2 py-1 rounded text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/5">
-                          {item.division}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium">{item.time}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black ${
-                          item.status === "HADIR" ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" : 
-                          item.status === "IZIN" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                        }`}>
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button className="text-slate-400 hover:text-[#00bcd4] transition-colors">👁</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <span className="px-3 py-1 rounded-lg bg-slate-50 dark:bg-zinc-800/50 text-[10px] font-bold text-slate-400 dark:text-zinc-500 border border-slate-200/50 dark:border-zinc-700">
+                        N/A
+                      </span>
+                    </td>
+                    <td className="px-8 py-5 font-mono text-slate-600 dark:text-zinc-400">
+                      {row.jam_masuk || "00:00:00"}
+                    </td>
+                    <td className="px-8 py-5">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${
+                          row.status.toLowerCase() === "hadir"
+                            ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20"
+                            : row.status.toLowerCase() === "izin"
+                              ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20"
+                              : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20"
+                        }`}
+                      >
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      <button className="h-8 w-8 rounded-lg bg-slate-50 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all inline-flex items-center justify-center">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-8 py-12 text-center text-slate-400"
+                  >
+                    Tidak ada data untuk ditampilkan.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
-};
-
-export default ReportPresensiPage;
+}
